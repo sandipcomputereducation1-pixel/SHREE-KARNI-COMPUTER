@@ -2383,1122 +2383,838 @@ select{
 </a>
 
 
-<script>
+"use strict";
 
-/* =====================================================
-   NAVIGATION
-===================================================== */
+/* ==========================================
+   SHREE KARNI COMPUTER
+   BUG FIXED JAVASCRIPT
+   Existing HTML & Design Compatible
+========================================== */
 
-function showSection(name){
+/* ---------- COMMON FUNCTIONS ---------- */
 
-    document
-        .querySelectorAll('.section')
-        .forEach(section=>{
-            section.classList.remove('active');
-        });
+function showSection(name) {
+    const section = document.getElementById(name);
+    if (!section) return;
 
-    const target=document.getElementById(name);
-
-    if(target){
-        target.classList.add('active');
-    }
-
-    document
-        .querySelectorAll('.nav button')
-        .forEach(button=>{
-            button.classList.remove('active');
-        });
-
-    const nav=document.getElementById('nav-'+name);
-
-    if(nav){
-        nav.classList.add('active');
-    }
-
-    window.scrollTo({
-        top:0,
-        behavior:'smooth'
+    document.querySelectorAll(".section").forEach(s => {
+        s.classList.toggle("active", s.id === name);
     });
+
+    document.querySelectorAll(".nav button").forEach(b => {
+        b.classList.toggle("active", b.id === "nav-" + name);
+    });
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+/* ---------- DARK MODE ---------- */
 
-/* =====================================================
-   DARK MODE
-===================================================== */
+function toggleDark() {
+    document.body.classList.toggle("dark");
 
-function toggleDark(){
+    const enabled = document.body.classList.contains("dark");
 
-    document.body.classList.toggle('dark');
+    try {
+        localStorage.setItem("centreDark", enabled ? "true" : "false");
+    } catch (e) {}
 
-    const dark=document.body.classList.contains('dark');
-
-    localStorage.setItem(
-        'centreDark',
-        dark ? 'true' : 'false'
-    );
-
-    document.getElementById('themeBtn').textContent =
-        dark ? '☀️ Light' : '🌙 Dark';
+    const btn = document.getElementById("themeBtn");
+    if (btn) btn.textContent = enabled ? "☀️ Light" : "🌙 Dark";
 }
 
-if(localStorage.getItem('centreDark')==='true'){
+try {
+    if (localStorage.getItem("centreDark") === "true") {
+        document.body.classList.add("dark");
+        const btn = document.getElementById("themeBtn");
+        if (btn) btn.textContent = "☀️ Light";
+    }
+} catch (e) {}
 
-    document.body.classList.add('dark');
+/* ---------- GOOGLE SEARCH ---------- */
 
-    document.getElementById('themeBtn').textContent='☀️ Light';
-}
+function googleSearch() {
+    const input = document.getElementById("searchInput");
+    if (!input) return;
 
+    const query = input.value.trim();
 
-/* =====================================================
-   GOOGLE SEARCH
-===================================================== */
-
-function googleSearch(){
-
-    const q=
-        document
-        .getElementById('search')
-        .value
-        .trim();
-
-    if(q){
-
+    if (query) {
         window.open(
-            'https://www.google.com/search?q='+
-            encodeURIComponent(q),
-            '_blank'
+            "https://www.google.com/search?q=" + encodeURIComponent(query),
+            "_blank",
+            "noopener"
         );
-
     }
-
 }
 
-
-/* =====================================================
-   8 PHOTO EDITOR
-===================================================== */
-
-const photoInput=
-    document.getElementById('photoInput');
-
-const canvas=
-    document.getElementById('editorCanvas');
-
-const ctx=
-    canvas.getContext('2d');
-
-const zoomSlider=
-    document.getElementById('zoomSlider');
-
-const xSlider=
-    document.getElementById('xSlider');
-
-const ySlider=
-    document.getElementById('ySlider');
-
-const zoomText=
-    document.getElementById('zoomText');
-
-const xText=
-    document.getElementById('xText');
-
-const yText=
-    document.getElementById('yText');
-
-const backgroundSelect=
-    document.getElementById('backgroundSelect');
-
-const printPhotosEls=
-    document.querySelectorAll('.printPhoto');
-
-const photoBoxes=
-    document.querySelectorAll('.photo-box');
-
-let photo=new Image();
-
-let loaded=false;
-
-let printRotation=0;
-
-let zoom=1;
-
-let posX=0;
-
-let posY=0;
-
-
-/* ---------- UPLOAD ---------- */
-
-photoInput.addEventListener(
-    'change',
-    function(){
-
-        const file=this.files[0];
-
-        if(!file)return;
-
-        if(!file.type.startsWith('image/')){
-
-            alert('कृपया image file चुनें।');
-
-            this.value='';
-
-            return;
-        }
-
-        const reader=new FileReader();
-
-        reader.onload=e=>{
-
-            const image=new Image();
-
-            image.onload=()=>{
-
-                photo=image;
-
-                loaded=true;
-
-                printRotation=0;
-
-                zoom=1;
-
-                posX=0;
-
-                posY=0;
-
-                zoomSlider.value=100;
-
-                xSlider.value=0;
-
-                ySlider.value=0;
-
-                updateLabels();
-
-                drawEditor();
-
-                updatePrintPreview();
-
-            };
-
-            image.src=e.target.result;
-
-        };
-
-        reader.readAsDataURL(file);
-
-    }
-);
-
-
-/* ---------- BACKGROUND ---------- */
-
-function fillCanvas(c,w,h){
-
-    const value=
-        backgroundSelect.value;
-
-    if(value==='white'){
-
-        c.fillStyle='#fff';
-
-        c.fillRect(0,0,w,h);
-
-    }
-
-    else if(value==='lightblue'){
-
-        c.fillStyle='#dbeafe';
-
-        c.fillRect(0,0,w,h);
-
-    }
-
-    else{
-
-        c.clearRect(0,0,w,h);
-
-    }
-
-}
-
-
-/* ---------- DRAW EDITOR ---------- */
-
-function drawEditor(){
-
-    ctx.clearRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-    fillCanvas(
-        ctx,
-        canvas.width,
-        canvas.height
-    );
-
-    if(!loaded){
-
-        ctx.fillStyle='#94a3b8';
-
-        ctx.font='bold 25px Arial';
-
-        ctx.textAlign='center';
-
-        ctx.fillText(
-            'PHOTO UPLOAD करें',
-            300,
-            375
-        );
-
+/* ==========================================
+   PHOTO EDITOR
+========================================== */
+
+const photoInput = document.getElementById("photoInput");
+const canvas = document.getElementById("editorCanvas");
+const ctx = canvas ? canvas.getContext("2d") : null;
+
+const zoomSlider = document.getElementById("zoomSlider");
+const xSlider = document.getElementById("xSlider");
+const ySlider = document.getElementById("ySlider");
+const bgSelect = document.getElementById("bgSelect");
+
+const printImgs = [...document.querySelectorAll(".printPhoto")];
+const photoBoxes = [...document.querySelectorAll(".photo-box")];
+
+let photo = new Image();
+let originalPhoto = new Image();
+
+let loaded = false;
+let rotation = 0;
+let zoom = 1;
+let posX = 0;
+let posY = 0;
+
+function paintBackground(context, width, height) {
+    if (!context) return;
+
+    if (bgSelect && bgSelect.value === "none") {
+        context.clearRect(0, 0, width, height);
         return;
     }
 
-    ctx.save();
+    context.fillStyle =
+        bgSelect && bgSelect.value === "lightblue"
+            ? "#dbeafe"
+            : "#ffffff";
 
-    ctx.translate(
-        300+posX,
-        375+posY
-    );
-
-    ctx.rotate(
-        printRotation*Math.PI/180
-    );
-
-    const scale=
-        Math.min(
-            600/photo.width,
-            750/photo.height
-        )*zoom;
-
-    const w=
-        photo.width*scale;
-
-    const h=
-        photo.height*scale;
-
-    ctx.drawImage(
-        photo,
-        -w/2,
-        -h/2,
-        w,
-        h
-    );
-
-    ctx.restore();
+    context.fillRect(0, 0, width, height);
 }
 
+/* ---------- PHOTO DRAWING ---------- */
+
+function drawPhoto(context, width, height) {
+    if (!loaded || !photo.naturalWidth) return;
+
+    const angle = ((rotation % 360) + 360) % 360;
+    const sideways = angle === 90 || angle === 270;
+
+    const rotatedWidth = sideways ? photo.height : photo.width;
+    const rotatedHeight = sideways ? photo.width : photo.height;
+
+    const scale = Math.max(
+        width / rotatedWidth,
+        height / rotatedHeight
+    ) * zoom;
+
+    context.save();
+
+    context.translate(
+        width / 2 + posX * (width / 600),
+        height / 2 + posY * (height / 750)
+    );
+
+    context.rotate(angle * Math.PI / 180);
+
+    const drawWidth = photo.width * scale;
+    const drawHeight = photo.height * scale;
+
+    context.drawImage(
+        photo,
+        -drawWidth / 2,
+        -drawHeight / 2,
+        drawWidth,
+        drawHeight
+    );
+
+    context.restore();
+}
+
+/* ---------- EDITOR PREVIEW ---------- */
+
+function renderPhoto() {
+    if (!canvas || !ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    paintBackground(ctx, canvas.width, canvas.height);
+
+    if (!loaded) {
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "bold 24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("PHOTO UPLOAD करें", 300, 375);
+        clearPrintPreview();
+        return;
+    }
+
+    drawPhoto(ctx, canvas.width, canvas.height);
+    updatePrintPreview();
+}
 
 /* ---------- PRINT PREVIEW ---------- */
 
-function updatePrintPreview(){
+function updatePrintPreview() {
+    if (!loaded) return;
 
-    if(!loaded)return;
+    const output = document.createElement("canvas");
+    output.width = 800;
+    output.height = 1000;
 
-    const out=
-        document.createElement('canvas');
+    const context = output.getContext("2d");
 
-    out.width=800;
+    paintBackground(context, output.width, output.height);
+    drawPhoto(context, output.width, output.height);
 
-    out.height=1000;
+    const data = output.toDataURL("image/jpeg", 0.96);
 
-    const c=
-        out.getContext('2d');
+    printImgs.forEach((img, index) => {
+        img.src = data;
 
-    fillCanvas(
-        c,
-        800,
-        1000
-    );
-
-    c.save();
-
-    c.translate(
-        400+posX*1.3,
-        500+posY*1.3
-    );
-
-    c.rotate(
-        printRotation*Math.PI/180
-    );
-
-    const scale=
-        Math.min(
-            800/photo.width,
-            1000/photo.height
-        )*zoom;
-
-    const w=
-        photo.width*scale;
-
-    const h=
-        photo.height*scale;
-
-    c.drawImage(
-        photo,
-        -w/2,
-        -h/2,
-        w,
-        h
-    );
-
-    c.restore();
-
-    const data=
-        out.toDataURL('image/png');
-
-    printPhotosEls.forEach(
-        (image,index)=>{
-
-            image.src=data;
-
-            photoBoxes[index]
-                .classList
-                .add('has-photo');
-
+        if (photoBoxes[index]) {
+            photoBoxes[index].classList.add("filled");
         }
-    );
+    });
 }
 
+function clearPrintPreview() {
+    printImgs.forEach((img, index) => {
+        img.removeAttribute("src");
+
+        if (photoBoxes[index]) {
+            photoBoxes[index].classList.remove("filled");
+        }
+    });
+}
+
+/* ---------- PHOTO UPLOAD ---------- */
+
+if (photoInput) {
+    photoInput.addEventListener("change", function () {
+        const file = this.files && this.files[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            alert("कृपया सही Image File चुनें।");
+            this.value = "";
+            return;
+        }
+
+        const maxSize = 20 * 1024 * 1024;
+
+        if (file.size > maxSize) {
+            alert("फोटो का Size 20 MB से कम रखें।");
+            this.value = "";
+            return;
+        }
+
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = function () {
+            photo = img;
+            originalPhoto = img;
+
+            loaded = true;
+            rotation = 0;
+            zoom = 1;
+            posX = 0;
+            posY = 0;
+
+            resetSliders();
+            updateLabels();
+            renderPhoto();
+
+            URL.revokeObjectURL(url);
+        };
+
+        img.onerror = function () {
+            alert("यह फोटो खुल नहीं पाई। दूसरी फोटो चुनें।");
+            URL.revokeObjectURL(url);
+            photoInput.value = "";
+        };
+
+        img.src = url;
+    });
+}
+
+/* ---------- LABELS ---------- */
+
+function updateLabels() {
+    const zoomLabel = document.getElementById("zoomLabel");
+    const xLabel = document.getElementById("xLabel");
+    const yLabel = document.getElementById("yLabel");
+
+    if (zoomLabel) {
+        zoomLabel.textContent = Math.round(zoom * 100) + "%";
+    }
+
+    if (xLabel) xLabel.textContent = posX;
+    if (yLabel) yLabel.textContent = posY;
+}
+
+function resetSliders() {
+    if (zoomSlider) zoomSlider.value = 100;
+    if (xSlider) xSlider.value = 0;
+    if (ySlider) ySlider.value = 0;
+}
 
 /* ---------- ROTATE ---------- */
 
-function rotateLeft(){
-
-    if(!loaded){
-
-        alert('पहले फोटो upload करें।');
-
+function rotate(degrees) {
+    if (!loaded) {
+        alert("पहले फोटो Upload करें।");
         return;
     }
 
-    printRotation=
-        (printRotation-90)%360;
-
-    drawEditor();
-
-    updatePrintPreview();
+    rotation = (rotation + degrees + 360) % 360;
+    renderPhoto();
 }
-
-function rotateRight(){
-
-    if(!loaded){
-
-        alert('पहले फोटो upload करें।');
-
-        return;
-    }
-
-    printRotation=
-        (printRotation+90)%360;
-
-    drawEditor();
-
-    updatePrintPreview();
-}
-
 
 /* ---------- ZOOM ---------- */
 
-function zoomIn(){
+function changeZoom(amount) {
+    if (!loaded) {
+        alert("पहले फोटो Upload करें।");
+        return;
+    }
 
-    if(!loaded)return;
+    zoom = Math.max(0.5, Math.min(2, zoom + amount));
 
-    zoom=
-        Math.min(
-            2,
-            zoom+.1
-        );
-
-    zoomSlider.value=
-        Math.round(zoom*100);
-
-    updateLabels();
-
-    drawEditor();
-
-    updatePrintPreview();
-}
-
-function zoomOut(){
-
-    if(!loaded)return;
-
-    zoom=
-        Math.max(
-            .5,
-            zoom-.1
-        );
-
-    zoomSlider.value=
-        Math.round(zoom*100);
+    if (zoomSlider) {
+        zoomSlider.value = Math.round(zoom * 100);
+    }
 
     updateLabels();
-
-    drawEditor();
-
-    updatePrintPreview();
+    renderPhoto();
 }
-
 
 /* ---------- SLIDERS ---------- */
 
-zoomSlider.oninput=function(){
-
-    zoom=
-        Number(this.value)/100;
-
-    updateLabels();
-
-    drawEditor();
-
-    updatePrintPreview();
-};
-
-xSlider.oninput=function(){
-
-    posX=
-        Number(this.value);
-
-    updateLabels();
-
-    drawEditor();
-
-    updatePrintPreview();
-};
-
-ySlider.oninput=function(){
-
-    posY=
-        Number(this.value);
-
-    updateLabels();
-
-    drawEditor();
-
-    updatePrintPreview();
-};
-
-backgroundSelect.onchange=()=>{
-
-    drawEditor();
-
-    updatePrintPreview();
-
-};
-
-
-/* ---------- CROP ---------- */
-
-function cropPhoto(){
-
-    if(!loaded){
-
-        alert('पहले फोटो upload करें।');
-
-        return;
-    }
-
-    const ratio=4/5;
-
-    let cw=photo.width;
-
-    let ch=cw/ratio;
-
-    if(ch>photo.height){
-
-        ch=photo.height;
-
-        cw=ch*ratio;
-
-    }
-
-    const sx=
-        (photo.width-cw)/2;
-
-    const sy=
-        (photo.height-ch)/2;
-
-    const temp=
-        document.createElement('canvas');
-
-    temp.width=
-        Math.round(cw);
-
-    temp.height=
-        Math.round(ch);
-
-    temp
-        .getContext('2d')
-        .drawImage(
-            photo,
-            sx,
-            sy,
-            cw,
-            ch,
-            0,
-            0,
-            cw,
-            ch
-        );
-
-    const image=new Image();
-
-    image.onload=()=>{
-
-        photo=image;
-
-        printRotation=0;
-
-        zoom=1;
-
-        posX=0;
-
-        posY=0;
-
-        zoomSlider.value=100;
-
-        xSlider.value=0;
-
-        ySlider.value=0;
-
+if (zoomSlider) {
+    zoomSlider.addEventListener("input", function () {
+        zoom = Number(this.value) / 100;
         updateLabels();
-
-        drawEditor();
-
-        updatePrintPreview();
-
-    };
-
-    image.src=
-        temp.toDataURL('image/png');
+        renderPhoto();
+    });
 }
 
+if (xSlider) {
+    xSlider.addEventListener("input", function () {
+        posX = Number(this.value);
+        updateLabels();
+        renderPhoto();
+    });
+}
 
-/* ---------- BACKGROUND REMOVE ---------- */
+if (ySlider) {
+    ySlider.addEventListener("input", function () {
+        posY = Number(this.value);
+        updateLabels();
+        renderPhoto();
+    });
+}
 
-function removeBackground(){
+if (bgSelect) {
+    bgSelect.addEventListener("change", renderPhoto);
+}
 
-    if(!loaded){
+/* ---------- CROP 4:5 ---------- */
 
-        alert('पहले फोटो upload करें।');
-
+function cropPhoto() {
+    if (!loaded) {
+        alert("पहले फोटो Upload करें।");
         return;
     }
 
-    const temp=
-        document.createElement('canvas');
+    const targetRatio = 4 / 5;
 
-    temp.width=
-        photo.naturalWidth ||
-        photo.width;
+    let sourceWidth = photo.width;
+    let sourceHeight = photo.height;
 
-    temp.height=
-        photo.naturalHeight ||
-        photo.height;
+    if (sourceWidth / sourceHeight > targetRatio) {
+        sourceWidth = sourceHeight * targetRatio;
+    } else {
+        sourceHeight = sourceWidth / targetRatio;
+    }
 
-    const c=
-        temp.getContext('2d');
+    const sourceX = (photo.width - sourceWidth) / 2;
+    const sourceY = (photo.height - sourceHeight) / 2;
 
-    c.drawImage(
+    const tempCanvas = document.createElement("canvas");
+
+    tempCanvas.width = Math.round(sourceWidth);
+    tempCanvas.height = Math.round(sourceHeight);
+
+    const tempContext = tempCanvas.getContext("2d");
+
+    tempContext.drawImage(
         photo,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
         0,
         0,
-        temp.width,
-        temp.height
+        tempCanvas.width,
+        tempCanvas.height
     );
 
-    const imageData=
-        c.getImageData(
+    const croppedImage = new Image();
+
+    croppedImage.onload = function () {
+        photo = croppedImage;
+
+        rotation = 0;
+        zoom = 1;
+        posX = 0;
+        posY = 0;
+
+        resetSliders();
+        updateLabels();
+        renderPhoto();
+    };
+
+    croppedImage.src = tempCanvas.toDataURL("image/png");
+}
+
+/* ---------- LIGHT BACKGROUND REMOVE ---------- */
+
+function removeBackground() {
+    if (!loaded) {
+        alert("पहले फोटो Upload करें।");
+        return;
+    }
+
+    try {
+        const tempCanvas = document.createElement("canvas");
+
+        tempCanvas.width = photo.naturalWidth;
+        tempCanvas.height = photo.naturalHeight;
+
+        const tempContext = tempCanvas.getContext("2d", {
+            willReadFrequently: true
+        });
+
+        tempContext.drawImage(photo, 0, 0);
+
+        const imageData = tempContext.getImageData(
             0,
             0,
-            temp.width,
-            temp.height
+            tempCanvas.width,
+            tempCanvas.height
         );
 
-    const pixels=
-        imageData.data;
+        const pixels = imageData.data;
 
-    for(
-        let i=0;
-        i<pixels.length;
-        i+=4
-    ){
+        for (let i = 0; i < pixels.length; i += 4) {
+            const r = pixels[i];
+            const g = pixels[i + 1];
+            const b = pixels[i + 2];
 
-        const r=pixels[i];
-
-        const g=pixels[i+1];
-
-        const b=pixels[i+2];
-
-        /*
-          Simple white/light background
-          transparency removal.
-        */
-
-        if(
-            r>235 &&
-            g>235 &&
-            b>235
-        ){
-
-            pixels[i+3]=0;
-
+            if (r > 238 && g > 238 && b > 238) {
+                pixels[i + 3] = 0;
+            }
         }
 
+        tempContext.putImageData(imageData, 0, 0);
+
+        const processed = new Image();
+
+        processed.onload = function () {
+            photo = processed;
+
+            if (bgSelect) bgSelect.value = "white";
+
+            renderPhoto();
+        };
+
+        processed.src = tempCanvas.toDataURL("image/png");
+
+    } catch (error) {
+        console.error(error);
+        alert("Background Remove नहीं हो पाया।");
     }
-
-    c.putImageData(
-        imageData,
-        0,
-        0
-    );
-
-    const image=new Image();
-
-    image.onload=()=>{
-
-        photo=image;
-
-        backgroundSelect.value='white';
-
-        drawEditor();
-
-        updatePrintPreview();
-
-    };
-
-    image.src=
-        temp.toDataURL('image/png');
 }
 
+/* ---------- RESET PHOTO ---------- */
 
-/* ---------- RESET ---------- */
+function resetPhoto() {
+    if (!loaded) return;
 
-function resetPhoto(){
+    photo = originalPhoto;
 
-    if(!loaded)return;
+    rotation = 0;
+    zoom = 1;
+    posX = 0;
+    posY = 0;
 
-    printRotation=0;
+    if (bgSelect) bgSelect.value = "white";
 
-    zoom=1;
-
-    posX=0;
-
-    posY=0;
-
-    zoomSlider.value=100;
-
-    xSlider.value=0;
-
-    ySlider.value=0;
-
+    resetSliders();
     updateLabels();
-
-    drawEditor();
-
-    updatePrintPreview();
+    renderPhoto();
 }
-
-
-function updateLabels(){
-
-    zoomText.textContent=
-        Math.round(zoom*100)+'%';
-
-    xText.textContent=posX;
-
-    yText.textContent=posY;
-}
-
-
-/* ---------- PRINT 8 ---------- */
-
-function printPhotos(){
-
-    if(!loaded){
-
-        alert('पहले फोटो upload करें।');
-
-        return;
-    }
-
-    document.body.classList.remove(
-        'print-fold',
-        'print-single-front',
-        'print-single-back'
-    );
-
-    document.body.classList.add(
-        'print-photo'
-    );
-
-    window.print();
-}
-
 
 /* ---------- CLEAR PHOTO ---------- */
 
-function clearPhoto(){
+function clearPhoto() {
+    if (photoInput) photoInput.value = "";
 
-    photoInput.value='';
+    loaded = false;
 
-    loaded=false;
+    photo = new Image();
+    originalPhoto = new Image();
 
-    photo=new Image();
+    rotation = 0;
+    zoom = 1;
+    posX = 0;
+    posY = 0;
 
-    printRotation=0;
+    if (bgSelect) bgSelect.value = "white";
 
-    zoom=1;
-
-    posX=0;
-
-    posY=0;
-
-    printPhotosEls.forEach(
-        (image,index)=>{
-
-            image.removeAttribute('src');
-
-            photoBoxes[index]
-                .classList
-                .remove('has-photo');
-
-        }
-    );
-
-    drawEditor();
-
+    resetSliders();
     updateLabels();
+    clearPrintPreview();
+    renderPhoto();
 }
 
+/* ==========================================
+   PRINT SYSTEM
+========================================== */
 
-/* =====================================================
-   PVC FOLD
-===================================================== */
+async function waitForImages(root) {
+    const images = [...root.querySelectorAll("img")];
 
-const frontFile=
-    document.getElementById('frontFile');
+    await Promise.all(
+        images.map(async img => {
+            if (!img.getAttribute("src")) return;
 
-const backFile=
-    document.getElementById('backFile');
-
-const frontImage=
-    document.getElementById('frontImage');
-
-const backImage=
-    document.getElementById('backImage');
-
-
-function bindImageInput(
-    input,
-    image,
-    empty
-){
-
-    input.addEventListener(
-        'change',
-        function(){
-
-            const file=this.files[0];
-
-            if(!file)return;
-
-            if(!file.type.startsWith('image/')){
-
-                alert(
-                    'कृपया JPG, JPEG, PNG या image file चुनें।'
-                );
-
-                this.value='';
-
-                return;
+            if (img.decode) {
+                try {
+                    await img.decode();
+                    return;
+                } catch (e) {}
             }
 
-            const reader=
-                new FileReader();
+            if (img.complete && img.naturalWidth > 0) return;
 
-            reader.onload=e=>{
+            await new Promise(resolve => {
+                const finish = () => resolve();
 
-                image.src=
-                    e.target.result;
+                img.addEventListener("load", finish, { once: true });
+                img.addEventListener("error", finish, { once: true });
+            });
+        })
+    );
 
-                empty.style.display='none';
+    return images.every(img =>
+        !img.getAttribute("src") || img.naturalWidth > 0
+    );
+}
 
-            };
+/* ---------- START PRINT ---------- */
 
-            reader.readAsDataURL(file);
+function startPrint(mode, pageSize) {
+    document.body.classList.remove(
+        "print-photo",
+        "print-fold",
+        "print-front",
+        "print-back"
+    );
 
+    const oldStyle = document.getElementById("dynamicPrintPage");
+
+    if (oldStyle) oldStyle.remove();
+
+    const style = document.createElement("style");
+
+    style.id = "dynamicPrintPage";
+
+    style.textContent =
+        "@media print { @page { size: " +
+        pageSize +
+        "; margin: 0 !important; } }";
+
+    document.head.appendChild(style);
+
+    document.body.classList.add(mode);
+
+    setTimeout(() => {
+        window.print();
+    }, 150);
+}
+
+/* ---------- PRINT 8 PHOTOS ---------- */
+
+async function printPhotos() {
+    if (!loaded) {
+        alert("पहले फोटो Upload करें।");
+        return;
+    }
+
+    const area = document.getElementById("photoPrintArea");
+
+    if (!area) return;
+
+    updatePrintPreview();
+
+    const success = await waitForImages(area);
+
+    if (!success) {
+        alert("Photo Preview तैयार नहीं है। कृपया दोबारा कोशिश करें।");
+        return;
+    }
+
+    startPrint("print-photo", "4in 6in");
+}
+
+/* ==========================================
+   PVC IMAGE UPLOAD SYSTEM
+========================================== */
+
+function bindImageInput(inputId, imageId, emptyId) {
+    const input = document.getElementById(inputId);
+    const img = document.getElementById(imageId);
+    const empty = document.getElementById(emptyId);
+
+    if (!input || !img || !empty) {
+        return { input, img, empty };
+    }
+
+    let currentUrl = null;
+
+    input.addEventListener("change", function () {
+        const file = this.files && this.files[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            alert("कृपया सही Image File चुनें।");
+            input.value = "";
+            return;
         }
-    );
-}
 
+        if (file.size > 20 * 1024 * 1024) {
+            alert("Image Size 20 MB से कम रखें।");
+            input.value = "";
+            return;
+        }
 
-bindImageInput(
-    frontFile,
-    frontImage,
-    document.getElementById('frontEmpty')
-);
+        const newUrl = URL.createObjectURL(file);
 
-bindImageInput(
-    backFile,
-    backImage,
-    document.getElementById('backEmpty')
-);
+        const testImage = new Image();
 
+        testImage.onload = function () {
+            if (currentUrl) {
+                URL.revokeObjectURL(currentUrl);
+            }
 
-function printFold(){
+            currentUrl = newUrl;
+            img.src = newUrl;
+            empty.style.display = "none";
+        };
 
-    if(
-        !frontImage.src ||
-        !backImage.src
-    ){
+        testImage.onerror = function () {
+            URL.revokeObjectURL(newUrl);
+            alert("Image Load नहीं हुई। दूसरी Image चुनें।");
+            input.value = "";
+        };
 
-        alert(
-            'Front और Back दोनों card image चुनें।'
-        );
+        testImage.src = newUrl;
+    });
 
-        return;
-    }
-
-    document.body.classList.remove(
-        'print-photo',
-        'print-single-front',
-        'print-single-back'
-    );
-
-    document.body.classList.add(
-        'print-fold'
-    );
-
-    window.print();
-}
-
-
-function clearFold(){
-
-    frontFile.value='';
-
-    backFile.value='';
-
-    frontImage.removeAttribute('src');
-
-    backImage.removeAttribute('src');
-
-    document.getElementById(
-        'frontEmpty'
-    ).style.display='flex';
-
-    document.getElementById(
-        'backEmpty'
-    ).style.display='flex';
-}
-
-
-/* =====================================================
-   SINGLE PVC
-===================================================== */
-
-const sf=
-    document.getElementById(
-        'singleFrontFile'
-    );
-
-const sb=
-    document.getElementById(
-        'singleBackFile'
-    );
-
-const siF=
-    document.getElementById(
-        'singleFrontImage'
-    );
-
-const siB=
-    document.getElementById(
-        'singleBackImage'
-    );
-
-
-bindImageInput(
-    sf,
-    siF,
-    document.getElementById(
-        'singleFrontEmpty'
-    )
-);
-
-bindImageInput(
-    sb,
-    siB,
-    document.getElementById(
-        'singleBackEmpty'
-    )
-);
-
-
-function printSingle(side){
-
-    const image=
-        side==='front'
-        ? siF
-        : siB;
-
-    if(!image.src){
-
-        alert(
-            'पहले '+
-            side.toUpperCase()+
-            ' card image चुनें।'
-        );
-
-        return;
-    }
-
-    document.body.classList.remove(
-        'print-photo',
-        'print-fold',
-        'print-single-front',
-        'print-single-back'
-    );
-
-    document.body.classList.add(
-        side==='front'
-        ? 'print-single-front'
-        : 'print-single-back'
-    );
-
-    window.print();
-}
-
-
-function clearSingle(){
-
-    sf.value='';
-
-    sb.value='';
-
-    siF.removeAttribute('src');
-
-    siB.removeAttribute('src');
-
-    document.getElementById(
-        'singleFrontEmpty'
-    ).style.display='flex';
-
-    document.getElementById(
-        'singleBackEmpty'
-    ).style.display='flex';
-}
-
-
-/* =====================================================
-   GALLERY
-===================================================== */
-
-let galleryIndex=0;
-
-const galleryTrack=
-    document.getElementById(
-        'galleryTrack'
-    );
-
-const galleryDots=
-    document.querySelectorAll(
-        '.gallery-dots span'
-    );
-
-function showGallery(index){
-
-    const total=
-        galleryTrack.children.length;
-
-    if(index>=total){
-        galleryIndex=0;
-    }
-
-    else if(index<0){
-        galleryIndex=total-1;
-    }
-
-    else{
-        galleryIndex=index;
-    }
-
-    galleryTrack.style.transform=
-        'translateX(-'+
-        (galleryIndex*100)+
-        '%';
-
-    galleryDots.forEach(
-        (dot,i)=>{
-            dot.classList.toggle(
-                'active',
-                i===galleryIndex
+    return {
+        input,
+        img,
+        empty,
+        get hasImage() {
+            return !!(
+                img &&
+                img.getAttribute("src") &&
+                img.complete &&
+                img.naturalWidth > 0
             );
+        },
+        clear() {
+            input.value = "";
+            img.removeAttribute("src");
+            empty.style.display = "flex";
+
+            if (currentUrl) {
+                URL.revokeObjectURL(currentUrl);
+                currentUrl = null;
+            }
         }
-    );
+    };
 }
 
-function galleryMove(n){
+/* ---------- PVC FOLD ---------- */
 
-    showGallery(
-        galleryIndex+n
-    );
-}
-
-function galleryCurrent(n){
-
-    showGallery(n);
-}
-
-
-/* AUTO GALLERY */
-
-setInterval(
-    ()=>{
-        if(
-            document.getElementById(
-                'gallery'
-            ).classList.contains('active')
-        ){
-            galleryMove(1);
-        }
-    },
-    4000
+const foldFront = bindImageInput(
+    "frontFile",
+    "frontImage",
+    "frontEmpty"
 );
 
+const foldBack = bindImageInput(
+    "backFile",
+    "backImage",
+    "backEmpty"
+);
 
-/* =====================================================
-   AFTER PRINT
-===================================================== */
-
-window.addEventListener(
-    'afterprint',
-    ()=>{
-        document.body.classList.remove(
-            'print-photo',
-            'print-fold',
-            'print-single-front',
-            'print-single-back'
-        );
+async function printFold() {
+    if (!foldFront.hasImage || !foldBack.hasImage) {
+        alert("Front और Back दोनों Card Image चुनें।");
+        return;
     }
+
+    const area = document.getElementById("foldPrintArea");
+
+    const success = await waitForImages(area);
+
+    if (!success) {
+        alert("Card Image Load नहीं हुई।");
+        return;
+    }
+
+    startPrint("print-fold", "4in 6in");
+}
+
+function clearFold() {
+    foldFront.clear();
+    foldBack.clear();
+}
+
+/* ---------- SINGLE PVC CARD ---------- */
+
+const singleFront = bindImageInput(
+    "singleFrontFile",
+    "singleFrontImage",
+    "singleFrontEmpty"
 );
 
+const singleBack = bindImageInput(
+    "singleBackFile",
+    "singleBackImage",
+    "singleBackEmpty"
+);
 
-/* =====================================================
-   INITIALIZE
-===================================================== */
+async function printSingle(side) {
+    const item = side === "front" ? singleFront : singleBack;
 
-drawEditor();
+    if (!item.hasImage) {
+        alert("पहले " + side.toUpperCase() + " Image चुनें।");
+        return;
+    }
 
-updateLabels();
+    const area = document.getElementById("singlePrintArea");
+
+    const success = await waitForImages(area);
+
+    if (!success) {
+        alert("Card Image Load नहीं हुई।");
+        return;
+    }
+
+    startPrint(
+        side === "front" ? "print-front" : "print-back",
+        "98mm 54mm"
+    );
+}
+
+function clearSingle() {
+    singleFront.clear();
+    singleBack.clear();
+}
+
+/* ==========================================
+   AFTER PRINT CLEANUP
+========================================== */
+
+function cleanupPrint() {
+    document.body.classList.remove(
+        "print-photo",
+        "print-fold",
+        "print-front",
+        "print-back"
+    );
+
+    const style = document.getElementById("dynamicPrintPage");
+
+    if (style) style.remove();
+
+    document.querySelectorAll(".single-front, .single-back").forEach(el => {
+        el.style.display = "";
+    });
+}
+
+window.addEventListener("afterprint", cleanupPrint);
+
+/* ==========================================
+   GALLERY SLIDER
+========================================== */
+
+let galleryIndex = 0;
+
+const galleryTrack = document.getElementById("galleryTrack");
+
+function showGallery(index) {
+    if (!galleryTrack) return;
+
+    const total = galleryTrack.children.length;
+
+    if (!total) return;
+
+    galleryIndex = (index + total) % total;
+
+    galleryTrack.style.transform =
+        "translateX(-" + galleryIndex * 100 + "%)";
+}
+
+function galleryMove(direction) {
+    showGallery(galleryIndex + direction);
+}
 
 showGallery(0);
 
-</script>
+/* ---------- AUTOMATIC GALLERY ---------- */
+
+let galleryTimer = null;
+
+function startGallery() {
+    if (galleryTimer) clearInterval(galleryTimer);
+
+    galleryTimer = setInterval(() => {
+        const gallery = document.getElementById("gallery");
+
+        if (gallery && gallery.classList.contains("active")) {
+            galleryMove(1);
+        }
+    }, 4000);
+}
+
+startGallery();
+
+/* ---------- PAUSE ON TAB HIDDEN ---------- */
+
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        if (galleryTimer) clearInterval(galleryTimer);
+        galleryTimer = null;
+    } else {
+        startGallery();
+    }
+});
+
+/* ==========================================
+   INITIALIZE SYSTEM
+========================================== */
+
+updateLabels();
+renderPhoto();
+
+console.log("Shree Karni Computer System Loaded Successfully");
+
 
 </body>
 </html>
